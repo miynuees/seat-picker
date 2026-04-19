@@ -462,11 +462,24 @@ body {
         <h3>방법 2 — 직접 입력</h3>
         <p>학번·이름을 입력하고 <strong>Enter</strong>를 누르면 추가돼요. 이름 옆 <strong>✕</strong> 버튼으로 삭제할 수 있어요.</p>
 
+        <h3>👫 학급 유형 — 단성 학교 / 남녀공학</h3>
+        <p>학급 이름 옆에서 학급 유형을 고를 수 있어요. <strong>단성 학교</strong>(여학교·남학교)면 기존처럼 똑같이 쓰시면 돼요. <strong>남녀공학</strong>을 고르시면 성별 입력 UI가 나타나요.</p>
+
+        <div class="intro-card">
+          <p><strong>📋 공학 모드에서 성별 입력 방법</strong></p>
+          <ul>
+            <li><strong>한 명씩 추가</strong> — 이름 입력란 옆 <strong>♂ 남 / ♀ 여</strong> 토글을 눌러 지정한 뒤 추가해요.</li>
+            <li><strong>붙여넣기·나이스 엑셀</strong> — 학생을 먼저 불러온 뒤, 아래 학생 카드의 <strong>동그란 뱃지(? → ♂ → ♀)</strong>를 클릭해서 한 명씩 지정해요. 빨간 점선으로 깜빡이는 ? 뱃지는 아직 성별이 안 정해진 학생이에요.</li>
+            <li><strong>일괄 지정</strong> — 학생 목록 위의 <strong>전체 남자로 / 전체 여자로</strong> 버튼으로 먼저 일괄 설정한 뒤, 예외인 학생만 개별로 바꾸면 편해요.</li>
+          </ul>
+        </div>
+
         <div class="warning">
           <h3>⚠️ 주의할 점</h3>
           <ul>
             <li>번호가 중복되면 나중에 입력한 학생이 덮어써져요.</li>
             <li>명단을 다 지우면 자리뽑기를 시작할 수 없어요.</li>
+            <li>남녀공학 모드에서 성별이 지정되지 않은 학생이 있으면 자리뽑기를 시작할 수 없어요.</li>
           </ul>
         </div>
       </div>
@@ -476,7 +489,7 @@ body {
     <div class="print-page">
       <div class="section">
         <h2>🏫 교실 모양 만들기</h2>
-        <p>우리 반 책상 배치 그대로 만들어요. 4가지 템플릿 중에 골라서 시작해요.</p>
+        <p>우리 반 책상 배치 그대로 만들어요. 5가지 템플릿 중에 골라서 시작해요.</p>
 
         <div class="feature-grid">
           <div class="feature-card">
@@ -499,10 +512,35 @@ body {
             <div class="title">6인 모둠</div>
             <div class="desc">큰 책상·6명 모둠에 맞춤</div>
           </div>
+          <div class="feature-card">
+            <div class="emoji">🎨</div>
+            <div class="title">커스텀 모둠</div>
+            <div class="desc">가로·세로 직접 지정 (3인 줄, 8인 모둠 등)</div>
+          </div>
         </div>
 
         <h3>가로/세로 칸 조절 + 비활성 자리</h3>
         <p>슬라이더로 가로 칸·세로 줄 수를 조절해요. <strong>자리를 클릭</strong>하면 사용 안 함으로 바뀌어요. 고장난 책상이나 비워둘 자리에 쓰면 좋아요.</p>
+
+        <h3>🎨 커스텀 모둠 — 자유롭게 모둠 구성</h3>
+        <p><strong>커스텀 모둠</strong>을 고르시면 모둠 한 칸의 <strong>가로·세로 인원</strong>을 직접 정할 수 있어요. 예를 들어 <strong>3×1 = 3인 줄</strong>, <strong>2×3 = 6인 세로 모둠</strong>, <strong>4×2 = 8인 모둠</strong>처럼 원하는 대로 구성할 수 있어요. 모둠 결과 화면에서는 같은 모둠 자리들이 연한 핑크 박스로 묶여서 한눈에 보여요.</p>
+
+        <h3>👫 남녀공학 — 짝꿍 규칙 &amp; 자리별 성별 고정</h3>
+        <p>공학 모드에서는 교실 모양 아래에 <strong>두 가지 성별 조절 도구</strong>가 나타나요.</p>
+
+        <div class="intro-card">
+          <p><strong>💑 짝꿍 규칙</strong> (짝꿍 2인 배치일 때만)</p>
+          <ul>
+            <li><strong>상관 없음</strong> — 성별 무관 (기본)</li>
+            <li><strong>남녀 짝꿍</strong> — 짝은 남녀 쌍으로 맞춤. 남녀 수가 안 맞으면 남은 쪽은 같은 성별로 채워져요.</li>
+            <li><strong>같은 성별 짝꿍</strong> — 남남·여여로만 짝을 구성해요.</li>
+          </ul>
+        </div>
+
+        <div class="intro-card">
+          <p><strong>♂♀ 자리별 성별 고정</strong> (특수 상황용)</p>
+          <p>미리보기 위의 편집 모드 토글에서 <strong>♂♀ 성별 자리 고정</strong>을 선택하면, 자리를 클릭할 때마다 <strong>자유 → 남 → 여 → 자유</strong> 순서로 바뀌어요. 교탁 앞·창가 등 특정 자리에 특정 성별을 앉혀야 할 때 쓰시면 돼요. 일반 상황에선 쓰지 않으셔도 괜찮아요.</p>
+        </div>
 
         <div class="tip">
           <strong>💡 시점 토글</strong> — 결과 화면에서 <strong>학생 시점</strong>(교탁이 위)과 <strong>선생님 시점</strong>(교탁이 아래)을 바꿀 수 있어요. 칠판에 띄울 때 편한 쪽으로!
