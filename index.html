@@ -335,7 +335,7 @@ body.coed-mode.layout-group6 .pair-rule-box{display:none}
   display:flex;gap:44px;justify-content:center;flex-wrap:nowrap;
 }
 .group{display:grid;gap:8px;border-radius:18px;padding:8px;transition:background .2s,box-shadow .2s}
-/* 결과 화면·저장 이미지에서 모둠 박스 (테마 핑크 톤) — 1인 레이아웃은 예외 */
+/* 결과 화면·저장 이미지에서 모둠 박스 (테마 핑크 톤) — 1인·짝꿍 레이아웃은 예외 */
 #resultClassroom .group,
 .export-area .group{
   background:var(--pink-3);
@@ -345,7 +345,9 @@ body.coed-mode.layout-group6 .pair-rule-box{display:none}
   box-shadow:0 2px 8px rgba(255,150,170,.08);
 }
 body.layout-single #resultClassroom .group,
-body.layout-single .export-area .group{
+body.layout-single .export-area .group,
+body.layout-pair #resultClassroom .group,
+body.layout-pair .export-area .group{
   background:transparent;border:none;padding:8px;box-shadow:none;
 }
 
