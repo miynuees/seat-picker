@@ -827,12 +827,7 @@ body.paused .confetti-piece{animation-play-state:paused !important}
     <div class="card">
       <div class="card-head">
         <h2>✏️ 우리 반 학생 명단</h2>
-        <p class="hint">한 번 입력해두시면 브라우저에 저장돼서 다음에도 그대로 쓰실 수 있어요. 다른 기기에서 백업 파일을 만들었다면 아래 버튼으로 불러오세요.</p>
-      </div>
-
-      <div style="margin-bottom:14px">
-        <input type="file" id="backupFile" accept=".json,application/json" style="display:none" onchange="importBackup(this.files[0]); this.value=''">
-        <button class="btn btn-sm btn-lilac" onclick="document.getElementById('backupFile').click()">📥 백업 파일 불러오기</button>
+        <p class="hint">한 번 입력해두시면 브라우저에 저장돼서 다음에도 그대로 쓰실 수 있어요.</p>
       </div>
 
       <div class="row" style="margin-bottom:14px;align-items:flex-end">
@@ -846,6 +841,10 @@ body.paused .confetti-piece{animation-play-state:paused !important}
             <label><input type="radio" name="schoolType" value="single"><span>🧑 단성 학교</span></label>
             <label><input type="radio" name="schoolType" value="coed"><span>👫 남녀공학</span></label>
           </div>
+        </div>
+        <div style="flex:0 0 auto;display:flex;align-items:flex-end">
+          <input type="file" id="backupFile" accept=".json,application/json" style="display:none" onchange="importBackup(this.files[0]); this.value=''">
+          <button class="btn btn-sm btn-lilac" onclick="document.getElementById('backupFile').click()" title="다른 기기에서 저장한 백업 파일을 불러옵니다">📥 백업 불러오기</button>
         </div>
       </div>
 
