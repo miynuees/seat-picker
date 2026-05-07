@@ -141,6 +141,8 @@ body.theme-mono{
 .tab:hover:not(.active){background:rgba(255,255,255,.9);color:var(--ink)}
 .tab.secret-tab{display:none}
 body.secret-on .tab.secret-tab{display:inline-flex;align-items:center;gap:4px}
+/* 공개 조건 탭 — 학생들과 함께 보는 탭이라 민트색으로 구분 */
+.tab.tab-public.active{background:var(--mint);box-shadow:0 2px 8px rgba(123,200,168,.5)}
 
 /* secret-on indicator */
 .secret-indicator{
@@ -808,6 +810,7 @@ body.paused .confetti-piece{animation-play-state:paused !important}
       <button class="tab active" data-tab="students">📝 학생 명단</button>
       <button class="tab" data-tab="classroom">🏫 교실 모양</button>
       <button class="tab secret-tab" data-tab="constraints">🔒 비밀 조건</button>
+      <button class="tab tab-public" data-tab="public">👥 같이 정하기</button>
       <button class="tab" data-tab="run">🎲 자리뽑기</button>
       <button class="tab" data-tab="result">🎉 결과</button>
     </div>
@@ -1046,6 +1049,47 @@ body.paused .confetti-piece{animation-play-state:paused !important}
     </div>
   </section>
 
+  <!-- ──────── ③.5 PUBLIC CONSTRAINTS (학생들과 함께) ──────── -->
+  <section class="page" data-page="public">
+    <div class="card">
+      <h2>👥 같이 정하기</h2>
+      <p class="hint">학생들과 함께 보면서 정하는 자리 조건이에요. 떨어뜨릴 친구·앞쪽·뒤쪽·자리 고정을 같이 의논해보세요. <b>비밀 조건과 합쳐져서 자리뽑기에 자동 반영돼요.</b></p>
+
+      <div class="constraints-bar">
+        <div class="mode-pill active" data-mode="avoid">🚫 떨어뜨릴 두 명</div>
+        <div class="mode-pill" data-mode="front">⬆️ 앞쪽 자리</div>
+        <div class="mode-pill" data-mode="back">⬇️ 뒤쪽 자리</div>
+        <div class="mode-pill" data-mode="fixed">📍 자리 고정 · 전체 미리 배정</div>
+      </div>
+
+      <div id="publicConstraintHelp" class="hint" style="margin-top:0"></div>
+
+      <div id="publicStudentPick" class="student-pick"></div>
+
+      <div id="publicFixedAssignBox" style="display:none;margin-top:14px">
+        <p class="hint" style="margin-top:0">학생을 먼저 고른 다음 아래 미리보기에서 자리를 클릭해주세요. 학생들이 보는 앞에서 같이 결정하면 더 즐거워져요. 🌸</p>
+        <div class="fixed-helpers">
+          <button class="btn btn-mint btn-sm" onclick="autoFillFixed('order','public')">📋 번호순 자동 배정</button>
+          <button class="btn btn-lilac btn-sm" onclick="autoFillFixed('random','public')">🎲 랜덤 자동 배정</button>
+          <button class="btn btn-ghost btn-sm" onclick="clearAllFixed('public')">🗑 전부 지우기</button>
+          <span class="fixed-progress" id="publicFixedProgress"></span>
+        </div>
+        <div class="preview-area" style="padding:16px">
+          <div class="podium">교 탁</div>
+          <div id="publicFixedPreview" class="classroom"></div>
+        </div>
+      </div>
+
+      <div class="section-title"><span class="dot"></span>같이 정한 조건</div>
+      <div id="publicConstraintList" class="constraint-list"></div>
+
+      <div style="margin-top:18px;display:flex;justify-content:space-between">
+        <button class="btn btn-ghost" onclick="goTab('classroom')">◂ 이전</button>
+        <button class="btn btn-primary btn-lg" onclick="goTab('run')">자리뽑기 시작 ▸</button>
+      </div>
+    </div>
+  </section>
+
   <!-- ──────── ④ RUN ──────── -->
   <section class="page" data-page="run">
     <div class="card">
@@ -1217,6 +1261,7 @@ let state = {
   customGc: 3,                  // 커스텀 모둠: 가로 인원
   customGr: 2,                  // 커스텀 모둠: 세로 인원
   constraints: { avoid: [], front: [], back: [], fixed: {} },
+  publicConstraints: { avoid: [], front: [], back: [], fixed: {} },
   excluded: [],
   seatGender: {},               // {seatId: 'M'|'F'}  자리별 성별 고정
   assignments: {},
@@ -1239,6 +1284,11 @@ function load(){
       state.constraints.front ||= [];
       state.constraints.back ||= [];
       state.constraints.fixed ||= {};
+      if(!state.publicConstraints) state.publicConstraints = {avoid:[],front:[],back:[],fixed:{}};
+      state.publicConstraints.avoid ||= [];
+      state.publicConstraints.front ||= [];
+      state.publicConstraints.back ||= [];
+      state.publicConstraints.fixed ||= {};
       state.excluded ||= [];
       state.assignments ||= {};
       state.schoolType ||= 'single';
@@ -1269,7 +1319,8 @@ function goTab(name){
   document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active', t.dataset.tab===name));
   document.querySelectorAll('.page').forEach(p=>p.classList.toggle('active', p.dataset.page===name));
   if(name==='classroom') renderClassroom();
-  if(name==='constraints'){ renderConstraintMode(); renderConstraintList(); }
+  if(name==='constraints'){ renderConstraintMode('secret'); renderConstraintList('secret'); }
+  if(name==='public'){ renderConstraintMode('public'); renderConstraintList('public'); }
   if(name==='run') renderRunStage();
   if(name==='result') renderResult();
   window.scrollTo({top:0,behavior:'smooth'});
@@ -1392,11 +1443,13 @@ function addBulk(){
 function nextNum(){ let n=1; while(state.students.find(s=>s.num===n)) n++; return n; }
 function removeStudent(num){
   state.students = state.students.filter(s=>s.num!==num);
-  state.constraints.avoid = state.constraints.avoid.filter(p=>!p.includes(num));
-  state.constraints.front = state.constraints.front.filter(x=>x!==num);
-  state.constraints.back = state.constraints.back.filter(x=>x!==num);
-  for(const k of Object.keys(state.constraints.fixed)){
-    if(state.constraints.fixed[k]===num) delete state.constraints.fixed[k];
+  for(const cs of [state.constraints, state.publicConstraints]){
+    cs.avoid = cs.avoid.filter(p=>!p.includes(num));
+    cs.front = cs.front.filter(x=>x!==num);
+    cs.back = cs.back.filter(x=>x!==num);
+    for(const k of Object.keys(cs.fixed)){
+      if(cs.fixed[k]===num) delete cs.fixed[k];
+    }
   }
   save(); renderStudents();
 }
@@ -1404,6 +1457,7 @@ function clearStudents(){
   if(!confirm('정말로 모든 학생을 삭제하시겠어요?')) return;
   state.students = [];
   state.constraints = {avoid:[],front:[],back:[],fixed:{}};
+  state.publicConstraints = {avoid:[],front:[],back:[],fixed:{}};
   state.seatGender = {};
   save(); renderStudents();
 }
@@ -1784,6 +1838,7 @@ function toggleExclude(sid){
   // 제외되면 그 자리에 있던 고정배정/일반배정/성별고정도 제거
   if(i<0){
     delete state.constraints.fixed[sid];
+    delete state.publicConstraints.fixed[sid];
     delete state.assignments[sid];
     delete state.seatGender[sid];
   }
@@ -1813,62 +1868,123 @@ function clearAllSeatGender(){
   toast('모든 성별 자리 고정을 해제했어요');
 }
 
-/* ═════════════════════════ CONSTRAINTS ═════════════════════════ */
-let constraintMode = 'avoid';
-let pickedForConstraint = [];
-let pickedForFixed = null;
+/* ═════════════════════════ CONSTRAINTS (secret + public) ═════════════════════════ */
+const constraintCtx = {
+  secret: { mode:'avoid', pickedForConstraint:[], pickedForFixed:null },
+  public: { mode:'avoid', pickedForConstraint:[], pickedForFixed:null },
+};
+function csOf(group){ return group==='public' ? state.publicConstraints : state.constraints; }
+function idsOf(group){
+  return group==='public' ? {
+    help:'publicConstraintHelp', assignBox:'publicFixedAssignBox',
+    pick:'publicStudentPick', preview:'publicFixedPreview',
+    progress:'publicFixedProgress', list:'publicConstraintList',
+  } : {
+    help:'constraintHelp', assignBox:'fixedAssignBox',
+    pick:'studentPick', preview:'fixedPreview',
+    progress:'fixedProgress', list:'constraintList',
+  };
+}
 
-document.querySelectorAll('.mode-pill').forEach(p=>{
-  p.addEventListener('click', ()=>{
-    document.querySelectorAll('.mode-pill').forEach(x=>x.classList.remove('active'));
-    p.classList.add('active');
-    constraintMode = p.dataset.mode;
-    pickedForConstraint = [];
-    pickedForFixed = null;
-    renderConstraintMode();
+['constraints','public'].forEach(pageName=>{
+  document.querySelectorAll(`[data-page="${pageName}"] .mode-pill`).forEach(p=>{
+    p.addEventListener('click', ()=>{
+      const group = pageName==='public' ? 'public' : 'secret';
+      document.querySelectorAll(`[data-page="${pageName}"] .mode-pill`).forEach(x=>x.classList.remove('active'));
+      p.classList.add('active');
+      constraintCtx[group].mode = p.dataset.mode;
+      constraintCtx[group].pickedForConstraint = [];
+      constraintCtx[group].pickedForFixed = null;
+      renderConstraintMode(group);
+    });
   });
 });
 
-function renderConstraintMode(){
+function renderConstraintMode(group='secret'){
+  const ctx = constraintCtx[group];
+  const cs = csOf(group);
+  const ids = idsOf(group);
   const helps = {
     avoid: '떨어뜨리고 싶은 두 명을 클릭해서 선택해주세요. 같은 모둠/짝꿍/앞뒤로 안 앉게 됩니다.',
     front: '앞쪽에 앉을 학생들을 클릭해주세요 (시력이 안 좋거나 집중이 필요한 친구들).',
     back:  '뒤쪽에 앉을 학생들을 클릭해주세요 (키가 큰 친구들 등).',
     fixed: '학생을 한 명 클릭하시고, 아래 미리보기에서 앉힐 자리를 클릭해주세요.',
   };
-  $('constraintHelp').textContent = helps[constraintMode];
-  $('fixedAssignBox').style.display = constraintMode==='fixed' ? 'block' : 'none';
+  $(ids.help).textContent = helps[ctx.mode];
+  $(ids.assignBox).style.display = ctx.mode==='fixed' ? 'block' : 'none';
 
-  const pick = $('studentPick');
+  const pick = $(ids.pick);
   if(state.students.length===0){
     pick.innerHTML = '<div class="empty">먼저 학생 명단을 입력해주세요</div>';
     return;
   }
   pick.innerHTML = state.students.map(s=>{
     let cls = 'pick';
-    if(constraintMode==='front'  && state.constraints.front.includes(s.num)) cls += ' selected';
-    if(constraintMode==='back'   && state.constraints.back.includes(s.num)) cls += ' selected';
-    if(constraintMode==='avoid'  && pickedForConstraint.includes(s.num)) cls += ' selected';
-    if(constraintMode==='fixed'  && pickedForFixed===s.num) cls += ' selected';
-    if(constraintMode==='front' && state.constraints.back.includes(s.num)) cls += ' dimmed';
-    if(constraintMode==='back'  && state.constraints.front.includes(s.num)) cls += ' dimmed';
-    return `<div class="${cls}" onclick="pickStudent(${s.num})">${s.num}. ${escapeHtml(s.name)}</div>`;
+    if(ctx.mode==='front'  && cs.front.includes(s.num)) cls += ' selected';
+    if(ctx.mode==='back'   && cs.back.includes(s.num)) cls += ' selected';
+    if(ctx.mode==='avoid'  && ctx.pickedForConstraint.includes(s.num)) cls += ' selected';
+    if(ctx.mode==='fixed'  && ctx.pickedForFixed===s.num) cls += ' selected';
+    if(ctx.mode==='front' && cs.back.includes(s.num)) cls += ' dimmed';
+    if(ctx.mode==='back'  && cs.front.includes(s.num)) cls += ' dimmed';
+    return `<div class="${cls}" onclick="pickStudent(${s.num},'${group}')">${s.num}. ${escapeHtml(s.name)}</div>`;
   }).join('');
 
-  if(constraintMode==='fixed'){
-    renderClassroom('fixedPreview');
-    document.querySelectorAll('#fixedPreview .seat').forEach(el=>{
-      if(el.classList.contains('excluded')) return; // 제외자리는 고정 불가
-      el.addEventListener('click', ()=>assignFixed(el.dataset.id));
+  if(ctx.mode==='fixed'){
+    renderConstraintFixedPreview(group);
+    document.querySelectorAll(`#${ids.preview} .seat`).forEach(el=>{
+      if(el.classList.contains('excluded')) return;
+      el.addEventListener('click', ()=>assignFixed(el.dataset.id, group));
       el.style.cursor = 'pointer';
     });
-    updateFixedProgress();
+    updateFixedProgress(group);
   }
 }
 
-function updateFixedProgress(){
-  const el = $('fixedProgress'); if(!el) return;
-  const placed = Object.keys(state.constraints.fixed).length;
+// fixedPreview 렌더링 — 해당 group의 fixed만 표시
+function renderConstraintFixedPreview(group){
+  const ids = idsOf(group);
+  const cs = csOf(group);
+  const {seats, gc, gr, rows, cols} = generateSeats();
+  const container = $(ids.preview);
+  if(!container) return;
+  let html = '';
+  for(let gy=0; gy<rows; gy++){
+    html += '<div class="row-of-groups">';
+    for(let gx=0; gx<cols; gx++){
+      html += `<div class="group" style="grid-template-columns:repeat(${gc},auto)">`;
+      for(let iy=0; iy<gr; iy++){
+        for(let ix=0; ix<gc; ix++){
+          const seat = seats.find(s=>s.gx===gx && s.gy===gy && s.ix===ix && s.iy===iy);
+          if(!seat) continue;
+          const studentNum = cs.fixed[seat.id] ?? null;
+          const student = state.students.find(s=>s.num===studentNum);
+          let cls = 'seat';
+          if(seat.excluded) cls += ' excluded';
+          if(seat.isFront) cls += ' front';
+          if(seat.isBack && !seat.isFront) cls += ' back';
+          if(cs.fixed[seat.id]) cls += ' fixed';
+          if(!student) cls += ' empty-seat';
+          if(student) cls += ' has-student';
+          const noDisplay = seat.excluded ? '❌' : (seat.seatNo ?? '');
+          html += `<div class="${cls}" data-id="${seat.id}" data-no="${seat.seatNo??''}">
+            <div class="seat-id">${noDisplay}</div>
+            <div class="seat-num">${student?student.num:''}</div>
+            <div class="seat-name">${student?escapeHtml(student.name):(seat.excluded?'사용 안 함':'')}</div>
+          </div>`;
+        }
+      }
+      html += '</div>';
+    }
+    html += '</div>';
+  }
+  container.innerHTML = html;
+}
+
+function updateFixedProgress(group='secret'){
+  const ids = idsOf(group);
+  const cs = csOf(group);
+  const el = $(ids.progress); if(!el) return;
+  const placed = Object.keys(cs.fixed).length;
   const total = state.students.length;
   const full = placed>0 && placed===total;
   el.innerHTML = full
@@ -1876,7 +1992,8 @@ function updateFixedProgress(){
     : `<span class="fp-partial">${placed}/${total}명 고정됨</span>`;
 }
 
-function autoFillFixed(mode){
+function autoFillFixed(mode, group='secret'){
+  const cs = csOf(group);
   if(state.students.length===0){ toast('학생 명단을 먼저 입력해주세요'); return; }
   const {seats} = generateSeats();
   const usable = seats.filter(s=>!s.excluded);
@@ -1890,113 +2007,151 @@ function autoFillFixed(mode){
   for(let i=0;i<stuNums.length;i++){
     newFixed[seatOrder[i].id] = stuNums[i];
   }
-  state.constraints.fixed = newFixed;
-  save(); renderConstraintMode(); renderConstraintList();
+  cs.fixed = newFixed;
+  save(); renderConstraintMode(group); renderConstraintList(group);
   toast(mode==='random' ? '🎲 랜덤으로 전체 배정했어요' : '📋 번호순으로 전체 배정했어요');
 }
 
-function clearAllFixed(){
-  if(Object.keys(state.constraints.fixed).length===0){ toast('지울 게 없어요'); return; }
-  state.constraints.fixed = {};
-  save(); renderConstraintMode(); renderConstraintList();
+function clearAllFixed(group='secret'){
+  const cs = csOf(group);
+  if(Object.keys(cs.fixed).length===0){ toast('지울 게 없어요'); return; }
+  cs.fixed = {};
+  save(); renderConstraintMode(group); renderConstraintList(group);
   toast('전체 고정 배정을 지웠어요');
 }
-function pickStudent(num){
-  if(constraintMode==='avoid'){
-    if(pickedForConstraint.includes(num)){
-      pickedForConstraint = pickedForConstraint.filter(x=>x!==num);
+
+function pickStudent(num, group='secret'){
+  const ctx = constraintCtx[group];
+  const cs = csOf(group);
+  if(ctx.mode==='avoid'){
+    if(ctx.pickedForConstraint.includes(num)){
+      ctx.pickedForConstraint = ctx.pickedForConstraint.filter(x=>x!==num);
     } else {
-      pickedForConstraint.push(num);
-      if(pickedForConstraint.length===2){
-        const [a,b] = pickedForConstraint;
-        const exists = state.constraints.avoid.find(p=>(p[0]===a&&p[1]===b)||(p[0]===b&&p[1]===a));
-        if(!exists){ state.constraints.avoid.push([a,b]); toast('두 명을 떨어뜨리도록 설정했어요'); }
-        pickedForConstraint = [];
+      ctx.pickedForConstraint.push(num);
+      if(ctx.pickedForConstraint.length===2){
+        const [a,b] = ctx.pickedForConstraint;
+        const exists = cs.avoid.find(p=>(p[0]===a&&p[1]===b)||(p[0]===b&&p[1]===a));
+        if(!exists){ cs.avoid.push([a,b]); toast('두 명을 떨어뜨리도록 설정했어요'); }
+        ctx.pickedForConstraint = [];
         save();
       }
     }
-  } else if(constraintMode==='front'){
-    if(state.constraints.front.includes(num)){
-      state.constraints.front = state.constraints.front.filter(x=>x!==num);
+  } else if(ctx.mode==='front'){
+    if(cs.front.includes(num)){
+      cs.front = cs.front.filter(x=>x!==num);
     } else {
-      state.constraints.back = state.constraints.back.filter(x=>x!==num);
-      state.constraints.front.push(num);
+      cs.back = cs.back.filter(x=>x!==num);
+      cs.front.push(num);
     }
     save();
-  } else if(constraintMode==='back'){
-    if(state.constraints.back.includes(num)){
-      state.constraints.back = state.constraints.back.filter(x=>x!==num);
+  } else if(ctx.mode==='back'){
+    if(cs.back.includes(num)){
+      cs.back = cs.back.filter(x=>x!==num);
     } else {
-      state.constraints.front = state.constraints.front.filter(x=>x!==num);
-      state.constraints.back.push(num);
+      cs.front = cs.front.filter(x=>x!==num);
+      cs.back.push(num);
     }
     save();
-  } else if(constraintMode==='fixed'){
-    pickedForFixed = pickedForFixed===num ? null : num;
+  } else if(ctx.mode==='fixed'){
+    ctx.pickedForFixed = ctx.pickedForFixed===num ? null : num;
   }
-  renderConstraintMode();
-  renderConstraintList();
+  renderConstraintMode(group);
+  renderConstraintList(group);
 }
-function assignFixed(seatId){
-  if(!pickedForFixed){ toast('먼저 학생을 골라주세요'); return; }
+
+function assignFixed(seatId, group='secret'){
+  const ctx = constraintCtx[group];
+  const cs = csOf(group);
+  if(!ctx.pickedForFixed){ toast('먼저 학생을 골라주세요'); return; }
   if((state.excluded||[]).includes(seatId)){ toast('사용 안 함 자리에는 배정할 수 없어요'); return; }
-  for(const k of Object.keys(state.constraints.fixed)){
-    if(state.constraints.fixed[k]===pickedForFixed) delete state.constraints.fixed[k];
+  for(const k of Object.keys(cs.fixed)){
+    if(cs.fixed[k]===ctx.pickedForFixed) delete cs.fixed[k];
   }
-  state.constraints.fixed[seatId] = pickedForFixed;
-  toast(`${state.students.find(s=>s.num===pickedForFixed).name} 자리가 고정됐어요`);
-  pickedForFixed = null;
+  cs.fixed[seatId] = ctx.pickedForFixed;
+  toast(`${state.students.find(s=>s.num===ctx.pickedForFixed).name} 자리가 고정됐어요`);
+  ctx.pickedForFixed = null;
   save();
-  renderConstraintMode();
-  renderConstraintList();
+  renderConstraintMode(group);
+  renderConstraintList(group);
 }
-function renderConstraintList(){
-  const list = $('constraintList');
+
+function renderConstraintList(group='secret'){
+  const ids = idsOf(group);
+  const cs = csOf(group);
+  const list = $(ids.list);
   const items = [];
-  state.constraints.avoid.forEach((p,i)=>{
+  cs.avoid.forEach((p,i)=>{
     const a = state.students.find(s=>s.num===p[0]);
     const b = state.students.find(s=>s.num===p[1]);
     if(!a||!b) return;
     items.push(`<div class="constraint-item">
       <span class="ico">🚫</span>
       <span><b>${a.name}</b> ↔ <b>${b.name}</b> 떨어뜨리기</span>
-      <span class="x" onclick="rmAvoid(${i})">×</span>
+      <span class="x" onclick="rmAvoid(${i},'${group}')">×</span>
     </div>`);
   });
-  state.constraints.front.forEach(n=>{
+  cs.front.forEach(n=>{
     const s = state.students.find(x=>x.num===n);
     if(!s) return;
     items.push(`<div class="constraint-item" style="background:var(--blue-2)">
       <span class="ico">⬆️</span>
       <span><b>${s.name}</b> 앞쪽 자리</span>
-      <span class="x" onclick="rmFront(${n})">×</span>
+      <span class="x" onclick="rmFront(${n},'${group}')">×</span>
     </div>`);
   });
-  state.constraints.back.forEach(n=>{
+  cs.back.forEach(n=>{
     const s = state.students.find(x=>x.num===n);
     if(!s) return;
     items.push(`<div class="constraint-item" style="background:var(--lilac-2)">
       <span class="ico">⬇️</span>
       <span><b>${s.name}</b> 뒤쪽 자리</span>
-      <span class="x" onclick="rmBack(${n})">×</span>
+      <span class="x" onclick="rmBack(${n},'${group}')">×</span>
     </div>`);
   });
-  Object.entries(state.constraints.fixed).forEach(([sid,n])=>{
+  Object.entries(cs.fixed).forEach(([sid,n])=>{
     const s = state.students.find(x=>x.num===n);
     if(!s) return;
     const seat = generateSeats().seats.find(x=>x.id===sid);
     items.push(`<div class="constraint-item" style="background:var(--butter-2)">
       <span class="ico">📍</span>
       <span><b>${s.name}</b> → ${seat?seat.seatNo+'번 자리':'자리'} 고정</span>
-      <span class="x" onclick="rmFixed('${sid}')">×</span>
+      <span class="x" onclick="rmFixed('${sid}','${group}')">×</span>
     </div>`);
   });
   list.innerHTML = items.length ? items.join('') : '<div class="empty">설정된 조건이 없어요</div>';
 }
-function rmAvoid(i){ state.constraints.avoid.splice(i,1); save(); renderConstraintList(); }
-function rmFront(n){ state.constraints.front = state.constraints.front.filter(x=>x!==n); save(); renderConstraintList(); renderConstraintMode(); }
-function rmBack(n){ state.constraints.back = state.constraints.back.filter(x=>x!==n); save(); renderConstraintList(); renderConstraintMode(); }
-function rmFixed(sid){ delete state.constraints.fixed[sid]; save(); renderConstraintList(); renderConstraintMode(); }
+
+function rmAvoid(i, group='secret'){ csOf(group).avoid.splice(i,1); save(); renderConstraintList(group); }
+function rmFront(n, group='secret'){ const cs=csOf(group); cs.front = cs.front.filter(x=>x!==n); save(); renderConstraintList(group); renderConstraintMode(group); }
+function rmBack(n, group='secret'){ const cs=csOf(group); cs.back = cs.back.filter(x=>x!==n); save(); renderConstraintList(group); renderConstraintMode(group); }
+function rmFixed(sid, group='secret'){ delete csOf(group).fixed[sid]; save(); renderConstraintList(group); renderConstraintMode(group); }
+
+// 두 조건 합치기 (자리뽑기 시 사용) — 충돌 시 항상 공개(public) 우선
+function getMergedConstraints(){
+  const sec = state.constraints;
+  const pub = state.publicConstraints;
+
+  // front/back: 공개에 등장한 학생은 비밀의 front/back 양쪽에서 제거 (반대편 지정 충돌 방지)
+  const pubFB = new Set([...pub.front, ...pub.back]);
+  const secFront = sec.front.filter(n => !pubFB.has(n));
+  const secBack  = sec.back.filter(n => !pubFB.has(n));
+
+  // fixed: 같은 자리 충돌 + 같은 학생이 다른 자리에 둘 다 지정된 경우 모두 공개 우선
+  const mergedFixed = {...sec.fixed};
+  const pubStuNums = new Set(Object.values(pub.fixed));
+  for(const k of Object.keys(mergedFixed)){
+    if(pubStuNums.has(mergedFixed[k])) delete mergedFixed[k];
+  }
+  Object.assign(mergedFixed, pub.fixed);
+
+  // avoid: 단순 합집합 (반대 개념이 없어서 충돌이 의미없음)
+  return {
+    avoid: [...sec.avoid, ...pub.avoid],
+    front: [...secFront, ...pub.front],
+    back:  [...secBack,  ...pub.back],
+    fixed: mergedFixed,
+  };
+}
 
 /* ═════════════════════════ ASSIGNMENT ALGO ═════════════════════════ */
 function neighborSeatIds(seat, allSeats){
@@ -2083,10 +2238,11 @@ function tryAssign(){
     }
   }
 
+  const mergedCS = getMergedConstraints();
   const fixedAssign = {};
   const usedStudents = new Set();
   const usedSeats = new Set();
-  for(const [sid, num] of Object.entries(state.constraints.fixed)){
+  for(const [sid, num] of Object.entries(mergedCS.fixed)){
     if(seats.find(s=>s.id===sid) && state.students.find(s=>s.num===num)){
       // 고정 배정 학생이 그 자리의 성별 제약과 충돌하면 에러
       if(isCoed && seatGender[sid]){
@@ -2101,8 +2257,8 @@ function tryAssign(){
     }
   }
   const seatById = Object.fromEntries(seats.map(s=>[s.id,s]));
-  const front = state.constraints.front.filter(n=>!usedStudents.has(n));
-  const back  = state.constraints.back.filter(n=>!usedStudents.has(n));
+  const front = mergedCS.front.filter(n=>!usedStudents.has(n));
+  const back  = mergedCS.back.filter(n=>!usedStudents.has(n));
   const others = state.students.map(s=>s.num).filter(n=>!usedStudents.has(n)&&!front.includes(n)&&!back.includes(n));
 
   const frontSeats = seats.filter(s=>!usedSeats.has(s.id) && s.isFront);
@@ -2156,7 +2312,7 @@ function tryAssign(){
 
     // avoid 제약 검사
     let allOk = true;
-    for(const [na, nb] of state.constraints.avoid){
+    for(const [na, nb] of mergedCS.avoid){
       const seatA = Object.entries(a).find(([_,n])=>n===na)?.[0];
       const seatB = Object.entries(a).find(([_,n])=>n===nb)?.[0];
       if(!seatA || !seatB) continue;
@@ -2199,9 +2355,9 @@ function tryAssign(){
     return {ok:true, assignment:a};
   }
   const tips = [];
-  if(state.constraints.avoid.length) tips.push(`떨어뜨리기 ${state.constraints.avoid.length}쌍`);
-  if(state.constraints.front.length) tips.push(`앞쪽 ${state.constraints.front.length}명`);
-  if(state.constraints.back.length) tips.push(`뒤쪽 ${state.constraints.back.length}명`);
+  if(mergedCS.avoid.length) tips.push(`떨어뜨리기 ${mergedCS.avoid.length}쌍`);
+  if(mergedCS.front.length) tips.push(`앞쪽 ${mergedCS.front.length}명`);
+  if(mergedCS.back.length) tips.push(`뒤쪽 ${mergedCS.back.length}명`);
   if(isCoed && Object.keys(seatGender).length) tips.push(`성별 자리 고정 ${Object.keys(seatGender).length}개`);
   if(isCoed && pairRule!=='any') tips.push(`짝꿍 규칙(${pairRule==='mixed'?'남녀':'동성'})`);
   const tipTxt = tips.length ? ` 현재 설정: ${tips.join(' · ')}` : '';
