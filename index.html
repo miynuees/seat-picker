@@ -1053,11 +1053,10 @@ body.paused .confetti-piece{animation-play-state:paused !important}
   <section class="page" data-page="public">
     <div class="card">
       <h2>⚙️ 설정</h2>
-      <p class="hint">함께 보면서 정하는 자리 조건이에요. 떨어뜨릴 친구·앞쪽·뒤쪽·자리 고정을 같이 의논해서 추가해보세요. <b>자리뽑기에 자동 반영돼요.</b> 🌸</p>
+      <p class="hint">함께 보면서 정하는 자리 조건이에요. 앞쪽·뒤쪽·자리 고정을 같이 의논해서 추가해보세요. <b>자리뽑기에 자동 반영돼요.</b> 🌸</p>
 
       <div class="constraints-bar">
-        <div class="mode-pill active" data-mode="avoid">🚫 떨어뜨릴 두 명</div>
-        <div class="mode-pill" data-mode="front">⬆️ 앞쪽 자리</div>
+        <div class="mode-pill active" data-mode="front">⬆️ 앞쪽 자리</div>
         <div class="mode-pill" data-mode="back">⬇️ 뒤쪽 자리</div>
         <div class="mode-pill" data-mode="fixed">📍 자리 고정 · 전체 미리 배정</div>
       </div>
@@ -1871,7 +1870,7 @@ function clearAllSeatGender(){
 /* ═════════════════════════ CONSTRAINTS (secret + public) ═════════════════════════ */
 const constraintCtx = {
   secret: { mode:'avoid', pickedForConstraint:[], pickedForFixed:null },
-  public: { mode:'avoid', pickedForConstraint:[], pickedForFixed:null },
+  public: { mode:'front', pickedForConstraint:[], pickedForFixed:null },
 };
 function csOf(group){ return group==='public' ? state.publicConstraints : state.constraints; }
 function idsOf(group){

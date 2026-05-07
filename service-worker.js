@@ -1,4 +1,4 @@
-const CACHE = 'jari-v16';
+const CACHE = 'jari-v17';
 const ASSETS = [
   './',
   './index.html',
