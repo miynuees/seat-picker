@@ -119,6 +119,7 @@ body.theme-mono{
 .header .tabs{justify-self:center}
 .header .theme-picker{justify-self:end}
 .brand{display:flex;align-items:center;gap:12px;cursor:default;user-select:none}
+.brand-title-row{display:flex;align-items:center;gap:10px;flex-wrap:nowrap}
 .brand-icon{
   width:50px;height:50px;border-radius:18px;
   background:#fff;
@@ -800,11 +801,13 @@ body.paused .confetti-piece{animation-play-state:paused !important}
       <div class="brand" id="brandLogo" title="">
         <div class="brand-icon">🌸</div>
         <div>
-          <h1>두근두근 자리뽑기</h1>
+          <div class="brand-title-row">
+            <h1>두근두근 자리뽑기</h1>
+            <span class="secret-indicator" id="secretIndicator">🔓 비밀 모드</span>
+          </div>
           <div class="sub">heart-beating seating chart · by. senissem</div>
         </div>
       </div>
-      <span class="secret-indicator" id="secretIndicator">🔓 비밀 모드</span>
     </div>
     <div class="tabs">
       <button class="tab active" data-tab="students">📝 학생 명단</button>
@@ -815,6 +818,8 @@ body.paused .confetti-piece{animation-play-state:paused !important}
       <button class="tab" data-tab="result">🎉 결과</button>
     </div>
     <div class="theme-picker" id="themePicker">
+      <input type="file" id="backupFile" accept=".json,application/json" style="display:none" onchange="importBackup(this.files[0]); this.value=''">
+      <button class="btn btn-sm btn-lilac backup-btn" onclick="document.getElementById('backupFile').click()" title="다른 기기에서 저장한 백업 파일을 불러옵니다">📥 백업 불러오기</button>
       <button class="theme-btn" data-theme="pink" title="벚꽃" style="background:#FFB6C7"></button>
       <button class="theme-btn" data-theme="sky" title="하늘" style="background:#7BC0E8"></button>
       <button class="theme-btn" data-theme="mint" title="민트" style="background:#6FBF99"></button>
@@ -841,10 +846,6 @@ body.paused .confetti-piece{animation-play-state:paused !important}
             <label><input type="radio" name="schoolType" value="single"><span>🧑 단성 학교</span></label>
             <label><input type="radio" name="schoolType" value="coed"><span>👫 남녀공학</span></label>
           </div>
-        </div>
-        <div style="flex:0 0 auto;display:flex;align-items:flex-end">
-          <input type="file" id="backupFile" accept=".json,application/json" style="display:none" onchange="importBackup(this.files[0]); this.value=''">
-          <button class="btn btn-sm btn-lilac" onclick="document.getElementById('backupFile').click()" title="다른 기기에서 저장한 백업 파일을 불러옵니다">📥 백업 불러오기</button>
         </div>
       </div>
 
