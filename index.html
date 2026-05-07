@@ -827,7 +827,12 @@ body.paused .confetti-piece{animation-play-state:paused !important}
     <div class="card">
       <div class="card-head">
         <h2>✏️ 우리 반 학생 명단</h2>
-        <p class="hint">한 번 입력해두시면 브라우저에 저장돼서 다음에도 그대로 쓰실 수 있어요.</p>
+        <p class="hint">한 번 입력해두시면 브라우저에 저장돼서 다음에도 그대로 쓰실 수 있어요. 다른 기기에서 백업 파일을 만들었다면 아래 버튼으로 불러오세요.</p>
+      </div>
+
+      <div style="margin-bottom:14px">
+        <input type="file" id="backupFile" accept=".json,application/json" style="display:none" onchange="importBackup(this.files[0]); this.value=''">
+        <button class="btn btn-sm btn-lilac" onclick="document.getElementById('backupFile').click()">📥 백업 파일 불러오기</button>
       </div>
 
       <div class="row" style="margin-bottom:14px;align-items:flex-end">
@@ -1161,6 +1166,7 @@ body.paused .confetti-piece{animation-play-state:paused !important}
           <span>👀 교탁에서 보는 시점</span>
         </label>
         <button class="btn btn-mint" onclick="saveImage()">📷 이미지로 저장</button>
+        <button class="btn btn-butter" onclick="exportBackup()" title="JSON 파일로 저장. 다른 기기에서 불러오기 가능">💾 백업 저장</button>
         <button class="btn btn-lilac" onclick="resetToStart()">↺ 처음으로</button>
       </div>
 
@@ -2847,6 +2853,64 @@ async function saveImage(){
     toast('저장 완료! 🎉');
   }catch(e){ toast('저장에 실패했어요: '+e.message); }
   finally { target.classList.remove('exporting'); }
+}
+
+/* ═════════════════════════ BACKUP (다른 기기로 옮기기) ═════════════════════════ */
+function exportBackup(){
+  const data = {
+    app: 'jaribbobgi',
+    version: 1,
+    exportedAt: new Date().toISOString(),
+    state: state,
+  };
+  try{
+    const json = JSON.stringify(data, null, 2);
+    const blob = new Blob([json], {type:'application/json;charset=utf-8'});
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    const dateStr = new Date().toISOString().slice(0,10);
+    const cls = (state.className || '자리뽑기').replace(/[^\w가-힣]/g,'_');
+    link.download = `자리뽑기_백업_${cls}_${dateStr}.json`;
+    link.href = url;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    setTimeout(()=>URL.revokeObjectURL(url), 1500);
+    toast('백업 파일을 저장했어요 💾');
+  }catch(e){
+    toast('백업 저장에 실패했어요: '+e.message);
+  }
+}
+
+function importBackup(file){
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = (e)=>{
+    try{
+      const data = JSON.parse(e.target.result);
+      // 두 가지 포맷 호환: {app,state:...} 또는 state 직접
+      const loaded = (data && data.state && Array.isArray(data.state.students)) ? data.state
+                    : (data && Array.isArray(data.students)) ? data
+                    : null;
+      if(!loaded){
+        toast('자리뽑기 백업 파일이 아닌 것 같아요'); return;
+      }
+      const ok = confirm(
+        `백업을 불러오면 지금의 작업 내용이 사라져요. 계속할까요?\n\n` +
+        `학급: ${loaded.className||'(이름 없음)'}\n` +
+        `학생: ${(loaded.students||[]).length}명\n` +
+        `자리 배정: ${Object.keys(loaded.assignments||{}).length}자리`
+      );
+      if(!ok) return;
+      // localStorage에 직접 저장 후 reload — 모든 UI 자동 동기화
+      localStorage.setItem(STORAGE, JSON.stringify(loaded));
+      location.reload();
+    }catch(err){
+      toast('파일을 읽는 데 실패했어요');
+      console.error(err);
+    }
+  };
+  reader.readAsText(file);
 }
 
 /* ═════════════════════════ SECRET MODE ═════════════════════════ */
