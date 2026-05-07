@@ -117,7 +117,7 @@ body.theme-mono{
 }
 .header-left{display:flex;align-items:center;gap:12px;justify-self:start}
 .header .tabs{justify-self:center}
-.header .theme-picker{justify-self:end}
+.header-right{display:flex;align-items:center;gap:10px;justify-self:end}
 .brand{display:flex;align-items:center;gap:12px;cursor:default;user-select:none}
 .brand-title-row{display:flex;align-items:center;gap:10px;flex-wrap:nowrap}
 .brand-icon{
@@ -703,7 +703,7 @@ body.paused .confetti-piece{animation-play-state:paused !important}
 @media (max-width:768px){
   .app{padding:14px}
   .header{grid-template-columns:1fr;gap:14px}
-  .header .header-left,.header .tabs,.header .theme-picker{justify-self:center}
+  .header .header-left,.header .tabs,.header-right{justify-self:center}
   .tabs{justify-content:center}
   .tab{padding:9px 14px;font-size:13px}
   .seat{width:120px;height:56px;padding:0 8px 0 28px}
@@ -817,13 +817,15 @@ body.paused .confetti-piece{animation-play-state:paused !important}
       <button class="tab" data-tab="run">🎲 자리뽑기</button>
       <button class="tab" data-tab="result">🎉 결과</button>
     </div>
-    <div class="theme-picker" id="themePicker">
+    <div class="header-right">
       <input type="file" id="backupFile" accept=".json,application/json" style="display:none" onchange="importBackup(this.files[0]); this.value=''">
-      <button class="btn btn-sm btn-lilac backup-btn" onclick="document.getElementById('backupFile').click()" title="다른 기기에서 저장한 백업 파일을 불러옵니다">📥 백업 불러오기</button>
-      <button class="theme-btn" data-theme="pink" title="벚꽃" style="background:#FFB6C7"></button>
-      <button class="theme-btn" data-theme="sky" title="하늘" style="background:#7BC0E8"></button>
-      <button class="theme-btn" data-theme="mint" title="민트" style="background:#6FBF99"></button>
-      <button class="theme-btn" data-theme="mono" title="모노" style="background:#5A6478"></button>
+      <button class="btn btn-sm btn-lilac" onclick="document.getElementById('backupFile').click()" title="다른 기기에서 저장한 백업 파일을 불러옵니다">📥 백업 불러오기</button>
+      <div class="theme-picker" id="themePicker">
+        <button class="theme-btn" data-theme="pink" title="벚꽃" style="background:#FFB6C7"></button>
+        <button class="theme-btn" data-theme="sky" title="하늘" style="background:#7BC0E8"></button>
+        <button class="theme-btn" data-theme="mint" title="민트" style="background:#6FBF99"></button>
+        <button class="theme-btn" data-theme="mono" title="모노" style="background:#5A6478"></button>
+      </div>
     </div>
   </div>
 
