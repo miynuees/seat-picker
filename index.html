@@ -395,6 +395,20 @@ body.layout-pair .export-area .group{
 #resultClassroom .seat.excluded{
   visibility:hidden;background:transparent;border:none;box-shadow:none;
 }
+/* 결과 화면 — 두 자리 클릭으로 학생 swap */
+#resultClassroom .seat.swap-target{cursor:pointer;transition:box-shadow .15s, transform .15s}
+#resultClassroom .seat.swap-target:hover{box-shadow:0 0 0 2px var(--pink);transform:translateY(-1px)}
+#resultClassroom .seat.swap-picked{
+  outline:3px solid var(--pink);outline-offset:2px;
+  animation: seatSwapPulse 1.2s infinite;
+}
+@keyframes seatSwapPulse{
+  0%,100%{outline-color:var(--pink);box-shadow:0 0 12px rgba(var(--accent-rgb),.4)}
+  50%{outline-color:var(--lilac);box-shadow:0 0 18px rgba(var(--accent-rgb),.6)}
+}
+/* 이미지 저장(exporting) 시 swap 단서·외곽선 숨김 */
+.exporting #resultClassroom .seat.swap-target:hover{box-shadow:none;transform:none}
+.exporting #resultClassroom .seat.swap-picked{outline:none;animation:none;box-shadow:0 2px 6px rgba(0,0,0,.04)}
 /* secret-only highlights */
 body.secret-on .seat.front{border-color:var(--blue);background:var(--blue-3)}
 body.secret-on .seat.back{border-color:var(--lilac);background:var(--lilac-2)}
@@ -1096,7 +1110,7 @@ body.paused .confetti-piece{animation-play-state:paused !important}
   <section class="page" data-page="result">
     <div class="card">
       <h2>📸 자리 배치 완성</h2>
-      <p class="hint">예쁘게 정리된 배치도예요. 이미지로 저장하시거나 인쇄하실 수 있습니다.</p>
+      <p class="hint">예쁘게 정리된 배치도예요. <b>두 자리를 차례로 클릭하면 학생끼리 자리를 바꿀 수 있어요. (명단은 그대로 유지돼요)</b> 이미지로 저장하시거나 인쇄하실 수 있습니다.</p>
 
       <div class="result-toolbar">
         <label class="flip-toggle" title="교탁에서 학생들을 바라보는 시점으로 전환">
@@ -1732,7 +1746,7 @@ function renderClassroom(target='classroomPreview'){
           if(showGenderCues){
             gMark = `<div class="g-mark ${seatG==='M'?'male':'female'}">${seatG==='M'?'♂':'♀'}</div>`;
           }
-          html += `<div class="${cls}" data-id="${seat.id}" data-no="${seat.seatNo??''}">
+          html += `<div class="${cls}" data-id="${seat.id}" data-no="${seat.seatNo??''}"${student?` data-student-num="${student.num}"`:''}>
             <div class="seat-id">${noDisplay}</div>
             ${gMark}
             <div class="seat-num">${student?student.num:''}</div>
@@ -2508,6 +2522,7 @@ function renderResult(){
   $('exportMeta').textContent = `${dstr}  ·  총 ${Object.keys(state.assignments).length}명`;
   renderClassroom('resultClassroom');
   applyFlipResult();
+  enableResultSwap();
   const noteEl = $('exportNote');
   if(noteEl){
     noteEl.textContent = state.resultNote && state.resultNote.trim()
@@ -2517,6 +2532,48 @@ function renderResult(){
   const chk = $('flipResultChk');
   if(chk) chk.checked = !!state.flipResult;
   fitResultToFrame();
+}
+
+let swapPickedSeatId = null;
+function enableResultSwap(){
+  const classroom = $('resultClassroom');
+  if(!classroom) return;
+  swapPickedSeatId = null;
+  classroom.querySelectorAll('.seat').forEach(seatEl=>{
+    if(seatEl.classList.contains('excluded')) return;
+    seatEl.classList.add('swap-target');
+    seatEl.title = '두 자리를 차례로 클릭하면 학생이 서로 바뀌어요';
+    seatEl.addEventListener('click', ()=>{
+      const sid = seatEl.dataset.id;
+      if(swapPickedSeatId === null){
+        swapPickedSeatId = sid;
+        seatEl.classList.add('swap-picked');
+      } else if(swapPickedSeatId === sid){
+        swapPickedSeatId = null;
+        seatEl.classList.remove('swap-picked');
+      } else {
+        const a = swapPickedSeatId, b = sid;
+        const sA = state.assignments[a];
+        const sB = state.assignments[b];
+        if(sA === undefined && sB === undefined){
+          swapPickedSeatId = null;
+          classroom.querySelectorAll('.swap-picked').forEach(e=>e.classList.remove('swap-picked'));
+          return;
+        }
+        if(sB === undefined) delete state.assignments[a];
+        else state.assignments[a] = sB;
+        if(sA === undefined) delete state.assignments[b];
+        else state.assignments[b] = sA;
+        save();
+        swapPickedSeatId = null;
+        renderResult();
+        const nameA = sA!==undefined ? state.students.find(s=>s.num===sA)?.name : null;
+        const nameB = sB!==undefined ? state.students.find(s=>s.num===sB)?.name : null;
+        if(nameA && nameB) toast(`${nameA} ↔ ${nameB} 자리를 바꿨어요 🔄`);
+        else toast('자리를 바꿨어요 🔄');
+      }
+    });
+  });
 }
 
 function applyFlipResult(){
